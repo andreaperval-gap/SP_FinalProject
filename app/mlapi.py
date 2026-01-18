@@ -34,4 +34,4 @@ def read_root() -> HTMLResponse:
         - HTMLResponse: The content of 'index.html' served as an HTML page.
     """
     with open("index.html", "r") as f:
-        return HTMLResponse(f.read()) # devolvera index.html (hay que crearla)
+        return HTMLResponse(f.read()) # devolvera index.html 
