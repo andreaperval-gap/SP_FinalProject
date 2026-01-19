@@ -8,7 +8,7 @@
     <title>Scientific Programming - Project: Model Prediction</title>
         
     <!-- CSS -->
-        <style>
+    <style>
         /* Page style */
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -67,7 +67,48 @@
     </style>
     
     
-    
-    </head>
+</head>
 
+<!-- HTML -->
+<body>
+    <!-- Main Heading -->
+    <h1>Predict with Model</h1>
+
+    <!-- Form for model prediction -->
+    <form action="/predict/" method="post" onsubmit="predict(event)">
+        
+        <!-- Dropdown for selecting model -->
+        <div class="form-group">
+            <label for="model_name">Choose Model:</label>
+            <select name="model_name" id="model_name" onchange="loadMetrics()"></select> 
+        </div>
+
+        <!-- Input fields for model parameters -->
+        <div class="grid-container">
+            <!-- Column 1 -->
+            <div class="grid-item">
+                <label for="Variable1">Variable1:</label>
+                <input type="text" id="Variable1" name="Variable1" required>
+
+                <label for="Variable2">Variable2:</label>
+                <input type="text" id="Variable2" name="Variable2" required>
+
+                <label for="Variable3">Variable3:</label>
+                <input type="text" id="Variable3" name="Variable3" required>
+
+                <label for="Variable4">Variable4:</label>
+                <input type="text" id="Variable4" name="Variable4" required>
+
+                <label for="Variable5">Variable5:</label>
+                <input type="text" id="Variable5" name="Variable5" required>
+            </div>
+        </div>
+
+        <!-- Submit button -->
+        <button type="submit">Press to Predict</button>
+    </form>
+
+    <!-- Output display -->
+    <div id="output"></div>
+</body>    
 </html>
