@@ -4,6 +4,10 @@
 
 import numpy as np
 import pandas as pd
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
 
 new_columns = [
         "age",
@@ -44,10 +48,13 @@ categorical_columns = [
         "appetite",
         "edema",
         "anemia",
-        "ckd"
+        "ckd", 
+        "specific_gravity",
+        "albumin",
+        "sugar",
     ]
 
-numeric_columns = [
+numerical_columns = [
     "age",
     "blood_pressure",
     "glucose",
@@ -61,7 +68,7 @@ numeric_columns = [
     "rbc_count"
 ]
 
-# categorical (numerical categories)
+# categorical (numerical categories, e.g. "1.0", "1.05", "1.1")
 #        "specific_gravity",
 #        "albumin",
 #        "sugar",
@@ -74,7 +81,7 @@ def rename_columns(df,new_columns=new_columns):
 
     Args:
         df: a dataframe
-        new_columns: a list of the new column names.  
+        new_columns: a list of the new column names
 
     Returns: 
         The dataframe with the new column names. 
@@ -105,19 +112,19 @@ def missing_to_nan(df):
     cleaned_df = df.replace("?", np.nan)
     return cleaned_df
 
-def columns_to_numeric(df, numeric_columns=numeric_columns):
+def columns_to_numeric(df, numerical_columns=numerical_columns):
     """Converts the given columns to numeric. 
     
     Args: 
         df: a dataframe
-        numeric_columns: a list of the column names to be converted
+        numerical_columns: a list of the column names to be converted
     
     Returns: 
         The dataframe with the columns converted to numeric
     """
 
     # Convert selected columns to numeric types
-    for col in numeric_columns:
+    for col in numerical_columns:
         df[col] = pd.to_numeric(df[col], errors="coerce")
     return df
 
@@ -132,8 +139,7 @@ def cleaning_categorical_columns(df,categorical_cols=categorical_columns):
     """
 
     # Strip leading/trailing whitespace from all string values in these columns
-    for col in categorical_cols:
-        df[col] = df[col].astype(str).str.strip()
+    df[categorical_columns] = df[categorical_columns].map(lambda x: x.strip() if isinstance(x, str) else x)
 
     return df
 
@@ -151,34 +157,62 @@ def remove_outliers(df):
         The dataframe without the ouliers
     """ 
     idxs = df[(df["sodium"] < 5) | (df["potassium"] > 20)].index
-    no_outliers_df = df.drop(labels=idxs,inplace=False)
+    no_outliers_df = df.drop(labels=idxs,inplace=False).reset_index(drop=True)
     return no_outliers_df
 
-def normalize_df(df, numeric_columns=numeric_columns):
+def normalize_df(df, numerical_columns=numerical_columns):
     """Normalizes the numerical columns in the df using 0-1 normalization.
     
     Args: 
         df: a dataframe
-        numeric_columns: a list of the numeric column names
+        numerical_columns: a list of the numeric column names
     
     Returns:
-        The dataframe with its numerical columns normalized.
+        The dataframe with its numerical columns normalized
     """
 
-    df[numeric_columns] = (df[numeric_columns]-df[numeric_columns].min()) / \
-    (df[numeric_columns].max()-df[numeric_columns].min())
+    df[numerical_columns] = (df[numerical_columns]-df[numerical_columns].min()) / \
+    (df[numerical_columns].max()-df[numerical_columns].min())
     return df
 
-def preprocess_df(df, new_columns=new_columns, numeric_columns=numeric_columns):
+def impute_numerical(df,numerical_columns=numerical_columns,method="lr"):
+    """Imputes the missing values of numerical columns in the dataframe. 
+    
+    The method used is multiple imputation (MICE) with linear regression (lr) or 
+    a random forest classifier (rf). 
+    
+    Args: 
+        df: a dataframe
+        numerical_columns: a list of the numeric column names
+        method: the method to be used for imputation. Either "lr" or "rf". 
+    """
+    if method == "lr":
+        estimator = LinearRegression()
+    if method == "rf":
+        estimator = RandomForestRegressor(n_estimators=100)
+
+    # We create the imputer
+    imp = IterativeImputer(estimator=estimator, verbose=2, max_iter=10)#, tol=1e-10, imputation_order='roman')
+    # Apply it to the numerical columns
+    ImputedData = imp.fit_transform(df[numerical_columns])
+    # Convert the imputed values to a dataframe
+    Imputed_data = pd.DataFrame(ImputedData)
+    Imputed_data.columns = numerical_columns
+    # Substitute the imputed values into the dataframe
+    # Copy is not necessary, for the time being I keep it to not modify existing dfs
+    imp_df = df.copy()
+    imp_df[numerical_columns] = Imputed_data
+    return imp_df
+
+def preprocess_df(df, new_columns=new_columns, numerical_columns=numerical_columns):
     """Peforms data cleaning on the dataframe. 
     
-    This is the entire data cleaning pipeline. The new_columns and
-    numeric_columns
+    This is the entire data cleaning pipeline.
 
     Args: 
         df: a dataframe
-        new_columns: a list of the new column names.  
-        numeric_columns: a list of the numeric column names
+        new_columns: a list of the new column names
+        numerical_columns: a list of the numeric column names
 
     Returns: 
         The cleaned dataframe.
