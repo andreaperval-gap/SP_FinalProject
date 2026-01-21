@@ -8,6 +8,7 @@ from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
+from feature_engine.imputation import CategoricalImputer
 
 new_columns = [
         "age",
@@ -73,6 +74,9 @@ numerical_columns = [
 #        "albumin",
 #        "sugar",
 
+redundant_columns = [
+    "rbc"
+]
 
 def rename_columns(df,new_columns=new_columns):
     """Renames the columns of the dataframe with the names given
@@ -133,7 +137,8 @@ def cleaning_categorical_columns(df,categorical_cols=categorical_columns):
     
     Args: 
         df: a dataframe
-    
+        categorical_columns: a list of the categorical column names
+
     Returns: 
         The dataframe with the column values cleaned. 
     """
@@ -199,20 +204,63 @@ def impute_numerical(df,numerical_columns=numerical_columns,method="lr"):
     Imputed_data = pd.DataFrame(ImputedData)
     Imputed_data.columns = numerical_columns
     # Substitute the imputed values into the dataframe
-    # Copy is not necessary, for the time being I keep it to not modify existing dfs
     imp_df = df.copy()
     imp_df[numerical_columns] = Imputed_data
     return imp_df
 
-def preprocess_df(df, new_columns=new_columns, numerical_columns=numerical_columns):
+def remove_redundant_columns(df, redundant_columns=redundant_columns):
+    """Removes redundant columns from the dataset.
+    
+    Args: 
+        df: a dataframe
+        redundant_columns: a list of redundant column names
+    
+    Returns: 
+        The dataframe without redundant columns.
+    """
+    
+    df_dropped = df.drop(redundant_columns, axis=1, inplace=False)
+    return df_dropped
+
+def stratified_categorical_imputer(df, categorical_columns=categorical_columns):
+    """Performs categorical imputation with a stratified dataframe. 
+
+    Performs stratified imputation on the categorical variables, using 
+    the most frequent value as imputation and stratifying by age. 
+    The age groups are 0-20, 21-40, 41-60, 61+. 
+
+    Args: 
+        df: a dataframe
+        categorical_columns: a list of the categorical column names
+
+    Returns 
+        The dataframe with imputed values. 
+    """
+
+    imputed_df = df.copy()
+
+    age_groups = [0,20,40,60,200]
+    for n in range(len(age_groups)-1):
+        strat_idxs = (df["age"] >= age_groups[n]) & (df["age"] < age_groups[n+1])
+        strat_df = df[strat_idxs][categorical_columns]
+
+        imputer = CategoricalImputer(
+            variables=categorical_columns,
+            imputation_method="frequent"
+        )
+
+        imputer.fit(strat_df)
+
+        imputed_df.loc[strat_idxs,categorical_columns] = imputer.transform(strat_df)
+    return imputed_df
+
+def preprocess_df(df):
     """Peforms data cleaning on the dataframe. 
     
     This is the entire data cleaning pipeline.
 
     Args: 
         df: a dataframe
-        new_columns: a list of the new column names
-        numerical_columns: a list of the numeric column names
 
     Returns: 
         The cleaned dataframe.
@@ -227,6 +275,12 @@ def preprocess_df(df, new_columns=new_columns, numerical_columns=numerical_colum
     df = cleaning_categorical_columns(df)
     # Remove outliers
     df = remove_outliers(df)
+    # Impute numerical
+    df = impute_numerical(df)
+    # Impute categorical
+    df = stratified_categorical_imputer(df)
+    # Remove redundant columns
+    df = remove_redundant_columns(df)
     # Normalize numerical values 0-1
     df = normalize_df(df)
     return df
