@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    
+    <!-- Page title -->
+    <title>Scientific Programming - Project: Model Prediction</title>
+        
+    <!-- CSS -->
+    <style>
+        /* Page style */
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #8F2A2B; 
+            background: linear-gradient(120deg, #9531338a, #952628); 
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Page logo */
+        .page-logo{
+            position: fixed;  
+            top: 15px;
+            left: 15px;
+            width: 260px;      
+            height: auto;
+            margin: 0;         
+            z-index: 1000;     
+        }
+        
+        /* Page heading */
+        h1 {
+            text-align: center;
+            font-size: 3rem; 
+            font-weight: bold; 
+            color: #ffffff; 
+            font-family: 'Roboto', sans-serif; 
+            margin: 20px 0;
+        }
+
+        /* Form container */
+        form {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.8); 
+            backdrop-filter: blur(10px); 
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        select, input[type="text"], button {
+            padding: 8px 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        select {
+            background-color: #ffffff;
+        }
+        button {
+            background-color: #1F2937;
+            color: white;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #111827;
+        }
+        .fields-2col{
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 2 columnas */
+            gap: 12px 18px;
+            margin-top: 10px;
+            }
+
+            .field label{
+            display: block;
+            margin-bottom: 6px;
+            }
+
+            .field input{
+            width: 100%;
+            margin-bottom: 0; /* el espacio lo maneja el gap */
+            }
+
+            .subtitle{
+            text-align: center;
+            margin: 0 0 14px;
+            color: #ffffff; 
+            font-family: 'Roboto', sans-serif; 
+        }
+        .output-box{
+            margin-top: 14px;
+            padding: 14px 16px;
+            background: #ffffff;
+            border-radius: 10px;
+            font-size: 1.4rem;
+            font-weight: 800;
+            text-align: center;
+            color: #111827;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        }
+
+        /* Metrics */
+        #metrics{
+            margin-top: 12px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 8px;
+            padding: 10px;
+            }
+
+            #metrics pre{
+            white-space: pre-wrap;
+            margin: 0;
+            font-size: 0.9rem;
+            }
+
+            .error{
+            color: #b91c1c;
+            font-weight: 600;
+        }
+    </style>
+    <script>
+        // Load model
+        async function loadModels(){
+            const res = await fetch("/models/");
+            const models = await res.json();
+
+            const sel = document.getElementById("model_name");
+            sel.innerHTML = models
+            .map(m => `<option value="${m}">${m.replace(".pkl","")}</option>`)
+            .join("");
+
+            if (models.length) loadMetrics();
+        }
+
+        // Load metrics
+        async function loadMetrics(){
+            const modelName = document.getElementById("model_name").value;
+            const metricsDiv = document.getElementById("metrics");
+            metricsDiv.style.display = "none";
+
+            const res = await fetch(`/metrics/?model_name=${encodeURIComponent(modelName)}`);
+            if (res.ok){
+            const txt = await res.text();
+            metricsDiv.innerHTML = `<h3>Testing Metrics</h3><pre>${txt}</pre>`;
+            metricsDiv.style.display = "block";
+            } else {
+            metricsDiv.innerHTML = `<div class="error">Metrics could not be loaded.</div>`;
+            metricsDiv.style.display = "block";
+            }
+        }
+
+        // Predict using model and input data
+        async function predict(event){
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            const res = await fetch(event.target.action, { method:"POST", body: formData });
+            const out = document.getElementById("output");
+            out.style.display = "block";        
+            out.className = "output-box";
+
+            if (res.ok){
+            const data = await res.json();
+            out.textContent = `MODEL: ${data.model} | PREDICTION: ${data.prediction} (${data.label})`;
+            out.className = "";
+            } else {
+            const err = await res.json();
+            out.textContent = `Error: ${err.detail}`;
+            out.className = "error";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", loadModels);
+    </script>
+
+    
+    
+</head>
+
+<!-- HTML -->
+<body>
+    <!-- University Icon -->
+    <img src="/img/LogoUniversitat.png" alt="Logo" class="page-logo">
+
+    <!-- Main Heading -->
+    <h1>Prediction with Model</h1>
+
+    <p class="subtitle">
+        Steps:<br>
+        1. Choose a model<br>
+        2. Enter the clinical values<br>
+        3. Press <b>Press to Predict</b>
+    </p>
+
+    <!-- Form for model prediction -->
+    <form action="/predict/" method="post" onsubmit="predict(event)">
+        
+        <!-- Dropdown for selecting model -->
+        <div class="form-group">
+            <label for="model_name">Choose Model:</label>
+            <select name="model_name" id="model_name" onchange="loadMetrics()"></select> 
+            <div id="metrics" style="display:none;"></div>
+        </div>
+
+        <!-- Input fields for model parameters -->
+        <div class="fields-2col">
+        <div class="field">
+            <label for="age">Age:</label>
+            <input type="text" id="age" name="age" required>
+        </div>
+
+        <div class="field">
+            <label for="blood_pressure">Blood Pressure:</label>
+            <input type="text" id="blood_pressure" name="blood_pressure" required>
+        </div>
+
+        <div class="field">
+            <label for="glucose">Glucose:</label>
+            <input type="text" id="glucose" name="glucose" required>
+        </div>
+
+        <div class="field">
+            <label for="urea">Urea:</label>
+            <input type="text" id="urea" name="urea" required>
+        </div>
+
+        <div class="field">
+            <label for="creatinine">Creatinine:</label>
+            <input type="text" id="creatinine" name="creatinine" required>
+        </div>
+
+        <div class="field">
+            <label for="sodium">Sodium:</label>
+            <input type="text" id="sodium" name="sodium" required>
+        </div>
+
+        <div class="field">
+            <label for="potassium">Potassium:</label>
+            <input type="text" id="potassium" name="potassium" required>
+        </div>
+
+        <div class="field">
+            <label for="hemoglobin">Hemoglobin:</label>
+            <input type="text" id="hemoglobin" name="hemoglobin" required>
+        </div>
+
+        <div class="field">
+            <label for="pcv">PCV:</label>
+            <input type="text" id="pcv" name="pcv" required>
+        </div>
+
+        <div class="field">
+            <label for="wbc">WBC:</label>
+            <input type="text" id="wbc" name="wbc" required>
+        </div>
+
+        <div class="field">
+            <label for="rbc_count">RBC Count:</label>
+            <input type="text" id="rbc_count" name="rbc_count" required>
+        </div>
+        </div>
+
+        <!-- Submit button -->
+        <button type="submit">Press to Predict</button>
+        <!-- Output -->
+        <div id="output" class="output-box" style="display:none;"></div>
+    </form>
+</body>    
+</html>
