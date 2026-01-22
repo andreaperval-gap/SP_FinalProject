@@ -96,9 +96,93 @@
             margin: 0 0 14px;
             color: #ffffff; 
             font-family: 'Roboto', sans-serif; 
+        }
+        .output-box{
+            margin-top: 14px;
+            padding: 14px 16px;
+            background: #ffffff;
+            border-radius: 10px;
+            font-size: 1.4rem;
+            font-weight: 800;
+            text-align: center;
+            color: #111827;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        }
+
+        /* Metrics */
+        #metrics{
+            margin-top: 12px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 8px;
+            padding: 10px;
             }
 
+            #metrics pre{
+            white-space: pre-wrap;
+            margin: 0;
+            font-size: 0.9rem;
+            }
+
+            .error{
+            color: #b91c1c;
+            font-weight: 600;
+        }
     </style>
+    <script>
+        // Load model
+        async function loadModels(){
+            const res = await fetch("/models/");
+            const models = await res.json();
+
+            const sel = document.getElementById("model_name");
+            sel.innerHTML = models
+            .map(m => `<option value="${m}">${m.replace(".pkl","")}</option>`)
+            .join("");
+
+            if (models.length) loadMetrics();
+        }
+
+        // Load metrics
+        async function loadMetrics(){
+            const modelName = document.getElementById("model_name").value;
+            const metricsDiv = document.getElementById("metrics");
+            metricsDiv.style.display = "none";
+
+            const res = await fetch(`/metrics/?model_name=${encodeURIComponent(modelName)}`);
+            if (res.ok){
+            const txt = await res.text();
+            metricsDiv.innerHTML = `<h3>Testing Metrics</h3><pre>${txt}</pre>`;
+            metricsDiv.style.display = "block";
+            } else {
+            metricsDiv.innerHTML = `<div class="error">Metrics could not be loaded.</div>`;
+            metricsDiv.style.display = "block";
+            }
+        }
+
+        // Predict using model and input data
+        async function predict(event){
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            const res = await fetch(event.target.action, { method:"POST", body: formData });
+            const out = document.getElementById("output");
+            out.style.display = "block";        
+            out.className = "output-box";
+
+            if (res.ok){
+            const data = await res.json();
+            out.textContent = `MODEL: ${data.model} | PREDICTION: ${data.prediction} (${data.label})`;
+            out.className = "";
+            } else {
+            const err = await res.json();
+            out.textContent = `Error: ${err.detail}`;
+            out.className = "error";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", loadModels);
+    </script>
+
     
     
 </head>
@@ -106,7 +190,7 @@
 <!-- HTML -->
 <body>
     <!-- University Icon -->
-    <img src="img/LogoUniversitat.png" alt="Logo" class="page-logo">
+    <img src="/img/LogoUniversitat.png" alt="Logo" class="page-logo">
 
     <!-- Main Heading -->
     <h1>Prediction with Model</h1>
@@ -125,6 +209,7 @@
         <div class="form-group">
             <label for="model_name">Choose Model:</label>
             <select name="model_name" id="model_name" onchange="loadMetrics()"></select> 
+            <div id="metrics" style="display:none;"></div>
         </div>
 
         <!-- Input fields for model parameters -->
@@ -137,21 +222,6 @@
         <div class="field">
             <label for="blood_pressure">Blood Pressure:</label>
             <input type="text" id="blood_pressure" name="blood_pressure" required>
-        </div>
-
-        <div class="field">
-            <label for="specific_gravity">Specific Gravity:</label>
-            <input type="text" id="specific_gravity" name="specific_gravity" required>
-        </div>
-
-        <div class="field">
-            <label for="albumin">Albumin:</label>
-            <input type="text" id="albumin" name="albumin" required>
-        </div>
-
-        <div class="field">
-            <label for="sugar">Sugar:</label>
-            <input type="text" id="sugar" name="sugar" required>
         </div>
 
         <div class="field">
@@ -198,14 +268,12 @@
             <label for="rbc_count">RBC Count:</label>
             <input type="text" id="rbc_count" name="rbc_count" required>
         </div>
-
         </div>
+
         <!-- Submit button -->
         <button type="submit">Press to Predict</button>
-        </div>
+        <!-- Output -->
+        <div id="output" class="output-box" style="display:none;"></div>
     </form>
-
-    <!-- Output display -->
-    <div id="output"></div>
 </body>    
 </html>
