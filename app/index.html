@@ -17,6 +17,17 @@
             margin: 0;
             padding: 0;
         }
+
+        /* Page logo */
+        .page-logo{
+            position: fixed;  
+            top: 15px;
+            left: 15px;
+            width: 260px;      
+            height: auto;
+            margin: 0;         
+            z-index: 1000;     
+        }
         
         /* Page heading */
         h1 {
@@ -63,6 +74,29 @@
         button:hover {
             background-color: #111827;
         }
+        .fields-2col{
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 2 columnas */
+            gap: 12px 18px;
+            margin-top: 10px;
+            }
+
+            .field label{
+            display: block;
+            margin-bottom: 6px;
+            }
+
+            .field input{
+            width: 100%;
+            margin-bottom: 0; /* el espacio lo maneja el gap */
+            }
+
+            .subtitle{
+            text-align: center;
+            margin: 0 0 14px;
+            color: #ffffff; 
+            font-family: 'Roboto', sans-serif; 
+            }
 
     </style>
     
@@ -71,8 +105,18 @@
 
 <!-- HTML -->
 <body>
+    <!-- University Icon -->
+    <img src="img/LogoUniversitat.png" alt="Logo" class="page-logo">
+
     <!-- Main Heading -->
-    <h1>Predict with Model</h1>
+    <h1>Prediction with Model</h1>
+
+    <p class="subtitle">
+        Steps:<br>
+        1. Choose a model<br>
+        2. Enter the clinical values<br>
+        3. Press <b>Press to Predict</b>
+    </p>
 
     <!-- Form for model prediction -->
     <form action="/predict/" method="post" onsubmit="predict(event)">
@@ -84,28 +128,81 @@
         </div>
 
         <!-- Input fields for model parameters -->
-        <div class="grid-container">
-            <!-- Column 1 -->
-            <div class="grid-item">
-                <label for="Variable1">Variable1:</label>
-                <input type="text" id="Variable1" name="Variable1" required>
-
-                <label for="Variable2">Variable2:</label>
-                <input type="text" id="Variable2" name="Variable2" required>
-
-                <label for="Variable3">Variable3:</label>
-                <input type="text" id="Variable3" name="Variable3" required>
-
-                <label for="Variable4">Variable4:</label>
-                <input type="text" id="Variable4" name="Variable4" required>
-
-                <label for="Variable5">Variable5:</label>
-                <input type="text" id="Variable5" name="Variable5" required>
-            </div>
+        <div class="fields-2col">
+        <div class="field">
+            <label for="age">Age:</label>
+            <input type="text" id="age" name="age" required>
         </div>
 
+        <div class="field">
+            <label for="blood_pressure">Blood Pressure:</label>
+            <input type="text" id="blood_pressure" name="blood_pressure" required>
+        </div>
+
+        <div class="field">
+            <label for="specific_gravity">Specific Gravity:</label>
+            <input type="text" id="specific_gravity" name="specific_gravity" required>
+        </div>
+
+        <div class="field">
+            <label for="albumin">Albumin:</label>
+            <input type="text" id="albumin" name="albumin" required>
+        </div>
+
+        <div class="field">
+            <label for="sugar">Sugar:</label>
+            <input type="text" id="sugar" name="sugar" required>
+        </div>
+
+        <div class="field">
+            <label for="glucose">Glucose:</label>
+            <input type="text" id="glucose" name="glucose" required>
+        </div>
+
+        <div class="field">
+            <label for="urea">Urea:</label>
+            <input type="text" id="urea" name="urea" required>
+        </div>
+
+        <div class="field">
+            <label for="creatinine">Creatinine:</label>
+            <input type="text" id="creatinine" name="creatinine" required>
+        </div>
+
+        <div class="field">
+            <label for="sodium">Sodium:</label>
+            <input type="text" id="sodium" name="sodium" required>
+        </div>
+
+        <div class="field">
+            <label for="potassium">Potassium:</label>
+            <input type="text" id="potassium" name="potassium" required>
+        </div>
+
+        <div class="field">
+            <label for="hemoglobin">Hemoglobin:</label>
+            <input type="text" id="hemoglobin" name="hemoglobin" required>
+        </div>
+
+        <div class="field">
+            <label for="pcv">PCV:</label>
+            <input type="text" id="pcv" name="pcv" required>
+        </div>
+
+        <div class="field">
+            <label for="wbc">WBC:</label>
+            <input type="text" id="wbc" name="wbc" required>
+        </div>
+
+        <div class="field">
+            <label for="rbc_count">RBC Count:</label>
+            <input type="text" id="rbc_count" name="rbc_count" required>
+        </div>
+
+        </div>
         <!-- Submit button -->
         <button type="submit">Press to Predict</button>
+        </div>
     </form>
 
     <!-- Output display -->
