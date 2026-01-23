@@ -74,6 +74,21 @@
         button:hover {
             background-color: #111827;
         }
+        .button-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .button-row button {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .btn-clear {
+            background-color: #6B7280 !important;
+        }
+        .btn-clear:hover {
+            background-color: #4B5563 !important;
+        }
         .fields-2col{
             display: grid;
             grid-template-columns: 1fr 1fr; /* 2 columnas */
@@ -109,6 +124,36 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.08);
         }
 
+        /* Model and Preset selectors row */
+        .model-preset-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            align-items: flex-end;
+        }
+        .model-selector, .preset-selector-inline {
+            flex: 1;
+        }
+        .model-selector label, .preset-selector-inline label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+        .model-selector select, .preset-selector-inline select {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: 2px solid #1F2937;
+            border-radius: 5px;
+            background-color: #fff;
+            cursor: pointer;
+        }
+        .preset-selector-inline select {
+            background-color: #1F2937;
+            color: white;
+            font-weight: bold;
+        }
+
         /* Metrics */
         #metrics{
             margin-top: 12px;
@@ -127,8 +172,124 @@
             color: #b91c1c;
             font-weight: 600;
         }
+
+        /* Preset selector styles */
+        .preset-section {
+            background: rgba(31, 41, 55, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 2px dashed #1F2937;
+        }
+        .preset-section label {
+            color: #1F2937;
+            font-size: 0.95rem;
+        }
+        .preset-section select {
+            width: 100%;
+            margin-top: 8px;
+            background-color: #1F2937;
+            color: white;
+            font-weight: bold;
+        }
+        .preset-info {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 6px;
+            font-style: italic;
+        }
+
+        /* Field inputs with normal range indicators */
+        .field input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+        .field input[type="number"]:focus {
+            border-color: #1F2937;
+            outline: none;
+        }
+        .field-hint {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 4px;
+            font-style: italic;
+        }
+        .field-hint .normal-range {
+            color: #28a745;
+            font-weight: bold;
+        }
     </style>
     <script>
+        // Preset patient profiles for quick testing
+        // Values calibrated to work with the trained KNN model
+        const presets = {
+            "": { label: "-- Select a preset or enter values manually --" },
+            "healthy": {
+                label: "🟢 Healthy Patient (NOT CKD)",
+                age: 25, blood_pressure: 70, glucose: 90, urea: 20,
+                creatinine: 0.6, sodium: 140, potassium: 4.0,
+                hemoglobin: 16, pcv: 50, wbc: 6000, rbc_count: 5.5
+            },
+            "healthy_middle": {
+                label: "🟢 Middle-aged Healthy (NOT CKD)",
+                age: 40, blood_pressure: 75, glucose: 95, urea: 25,
+                creatinine: 0.8, sodium: 142, potassium: 4.2,
+                hemoglobin: 15.5, pcv: 48, wbc: 6500, rbc_count: 5.3
+            },
+            "ckd_mild": {
+                label: "🟡 Mild CKD Risk (CKD)",
+                age: 55, blood_pressure: 90, glucose: 140, urea: 50,
+                creatinine: 1.8, sodium: 135, potassium: 5.0,
+                hemoglobin: 11, pcv: 35, wbc: 9000, rbc_count: 4.0
+            },
+            "ckd_moderate": {
+                label: "🟠 Moderate CKD Risk (CKD)",
+                age: 60, blood_pressure: 100, glucose: 160, urea: 70,
+                creatinine: 3.5, sodium: 130, potassium: 5.5,
+                hemoglobin: 9, pcv: 28, wbc: 10000, rbc_count: 3.5
+            },
+            "ckd_severe": {
+                label: "🔴 Severe CKD Risk (CKD)",
+                age: 70, blood_pressure: 110, glucose: 200, urea: 120,
+                creatinine: 7.0, sodium: 125, potassium: 6.5,
+                hemoglobin: 7, pcv: 22, wbc: 12000, rbc_count: 2.8
+            },
+            "elderly_healthy": {
+                label: "👴 Elderly Healthy (NOT CKD)",
+                age: 65, blood_pressure: 75, glucose: 100, urea: 25,
+                creatinine: 0.9, sodium: 141, potassium: 4.0,
+                hemoglobin: 15, pcv: 47, wbc: 5500, rbc_count: 5.0
+            },
+            "diabetic_ckd": {
+                label: "🩸 Diabetic with CKD (CKD)",
+                age: 50, blood_pressure: 95, glucose: 180, urea: 60,
+                creatinine: 2.0, sodium: 134, potassium: 5.2,
+                hemoglobin: 10, pcv: 32, wbc: 9500, rbc_count: 3.8
+            }
+        };
+
+        // Apply preset values to form
+        function applyPreset() {
+            const presetKey = document.getElementById("preset_selector").value;
+            if (!presetKey) return;
+            
+            const preset = presets[presetKey];
+            const fields = ['age', 'blood_pressure', 'glucose', 'urea', 'creatinine', 
+                           'sodium', 'potassium', 'hemoglobin', 'pcv', 'wbc', 'rbc_count'];
+            
+            fields.forEach(field => {
+                if (preset[field] !== undefined) {
+                    document.getElementById(field).value = preset[field];
+                }
+            });
+        }
+
         // Load model
         async function loadModels(){
             const res = await fetch("/models/");
@@ -180,6 +341,17 @@
             }
         }
 
+        // Clear all form values
+        function clearForm() {
+            const fields = ['age', 'blood_pressure', 'glucose', 'urea', 'creatinine', 
+                           'sodium', 'potassium', 'hemoglobin', 'pcv', 'wbc', 'rbc_count'];
+            fields.forEach(field => {
+                document.getElementById(field).value = '';
+            });
+            document.getElementById('preset_selector').value = '';
+            document.getElementById('output').style.display = 'none';
+        }
+
         document.addEventListener("DOMContentLoaded", loadModels);
     </script>
 
@@ -205,73 +377,101 @@
     <!-- Form for model prediction -->
     <form action="/predict/" method="post" onsubmit="predict(event)">
         
-        <!-- Dropdown for selecting model -->
-        <div class="form-group">
-            <label for="model_name">Choose Model:</label>
-            <select name="model_name" id="model_name" onchange="loadMetrics()"></select> 
-            <div id="metrics" style="display:none;"></div>
+        <!-- Dropdown for selecting model and preset side by side -->
+        <div class="model-preset-row">
+            <div class="model-selector">
+                <label for="model_name">Choose Model:</label>
+                <select name="model_name" id="model_name" onchange="loadMetrics()"></select> 
+            </div>
+            <div class="preset-selector-inline">
+                <label for="preset_selector">Patient Profile:</label>
+                <select id="preset_selector" onchange="applyPreset()">
+                    <option value="">-- Select Profile --</option>
+                    <option value="healthy">🟢 Healthy Patient (NOT CKD)</option>
+                    <option value="healthy_middle">🟢 Middle-aged Healthy (NOT CKD)</option>
+                    <option value="elderly_healthy">👴 Elderly Healthy (NOT CKD)</option>
+                    <option value="ckd_mild">🟡 Mild CKD Risk (CKD)</option>
+                    <option value="ckd_moderate">🟠 Moderate CKD Risk (CKD)</option>
+                    <option value="ckd_severe">🔴 Severe CKD Risk (CKD)</option>
+                    <option value="diabetic_ckd">🩸 Diabetic with CKD (CKD)</option>
+                </select>
+            </div>
         </div>
+        <div id="metrics" style="display:none;"></div>
 
         <!-- Input fields for model parameters -->
         <div class="fields-2col">
         <div class="field">
-            <label for="age">Age:</label>
-            <input type="text" id="age" name="age" required>
+            <label for="age">Age (years):</label>
+            <input type="number" id="age" name="age" placeholder="e.g. 50" required>
         </div>
 
         <div class="field">
-            <label for="blood_pressure">Blood Pressure:</label>
-            <input type="text" id="blood_pressure" name="blood_pressure" required>
+            <label for="blood_pressure">Blood Pressure (mmHg):</label>
+            <input type="number" id="blood_pressure" name="blood_pressure" placeholder="e.g. 80" required>
+            <div class="field-hint">Normal: <span class="normal-range">70-80 mmHg</span></div>
         </div>
 
         <div class="field">
-            <label for="glucose">Glucose:</label>
-            <input type="text" id="glucose" name="glucose" required>
+            <label for="glucose">Glucose (mg/dL):</label>
+            <input type="number" id="glucose" name="glucose" placeholder="e.g. 100" required>
+            <div class="field-hint">Normal: <span class="normal-range">70-110 mg/dL</span></div>
         </div>
 
         <div class="field">
-            <label for="urea">Urea:</label>
-            <input type="text" id="urea" name="urea" required>
+            <label for="urea">Urea (mg/dL):</label>
+            <input type="number" id="urea" name="urea" placeholder="e.g. 30" required>
+            <div class="field-hint">Normal: <span class="normal-range">20-40 mg/dL</span></div>
         </div>
 
         <div class="field">
-            <label for="creatinine">Creatinine:</label>
-            <input type="text" id="creatinine" name="creatinine" required>
+            <label for="creatinine">Creatinine (mg/dL):</label>
+            <input type="number" step="0.1" id="creatinine" name="creatinine" placeholder="e.g. 1.0" required>
+            <div class="field-hint">Normal: <span class="normal-range">0.7-1.2 mg/dL</span></div>
         </div>
 
         <div class="field">
-            <label for="sodium">Sodium:</label>
-            <input type="text" id="sodium" name="sodium" required>
+            <label for="sodium">Sodium (mEq/L):</label>
+            <input type="number" id="sodium" name="sodium" placeholder="e.g. 140" required>
+            <div class="field-hint">Normal: <span class="normal-range">135-145 mEq/L</span></div>
         </div>
 
         <div class="field">
-            <label for="potassium">Potassium:</label>
-            <input type="text" id="potassium" name="potassium" required>
+            <label for="potassium">Potassium (mEq/L):</label>
+            <input type="number" step="0.1" id="potassium" name="potassium" placeholder="e.g. 4.5" required>
+            <div class="field-hint">Normal: <span class="normal-range">3.5-5.0 mEq/L</span></div>
         </div>
 
         <div class="field">
-            <label for="hemoglobin">Hemoglobin:</label>
-            <input type="text" id="hemoglobin" name="hemoglobin" required>
+            <label for="hemoglobin">Hemoglobin (g/dL):</label>
+            <input type="number" id="hemoglobin" name="hemoglobin" placeholder="e.g. 14" required>
+            <div class="field-hint">Normal: <span class="normal-range">12-17 g/dL</span></div>
         </div>
 
         <div class="field">
-            <label for="pcv">PCV:</label>
-            <input type="text" id="pcv" name="pcv" required>
+            <label for="pcv">PCV - Packed Cell Volume (%):</label>
+            <input type="number" id="pcv" name="pcv" placeholder="e.g. 44" required>
+            <div class="field-hint">Normal: <span class="normal-range">36-50%</span></div>
         </div>
 
         <div class="field">
-            <label for="wbc">WBC:</label>
-            <input type="text" id="wbc" name="wbc" required>
+            <label for="wbc">WBC - White Blood Cells (/μL):</label>
+            <input type="number" id="wbc" name="wbc" placeholder="e.g. 8000" required>
+            <div class="field-hint">Normal: <span class="normal-range">4,000-11,000/μL</span></div>
         </div>
 
         <div class="field">
-            <label for="rbc_count">RBC Count:</label>
-            <input type="text" id="rbc_count" name="rbc_count" required>
+            <label for="rbc_count">RBC Count (millions/μL):</label>
+            <input type="number" step="0.1" id="rbc_count" name="rbc_count" placeholder="e.g. 5.0" required>
+            <div class="field-hint">Normal: <span class="normal-range">4.0-5.5 M/μL</span></div>
         </div>
         </div>
 
-        <!-- Submit button -->
-        <button type="submit">Press to Predict</button>
+        <!-- Buttons -->
+        <div class="button-row">
+            <button type="submit">Press to Predict</button>
+            <button type="button" class="btn-clear" onclick="clearForm()">Clear Values</button>
+        </div>
         <!-- Output -->
         <div id="output" class="output-box" style="display:none;"></div>
     </form>
