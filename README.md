@@ -91,9 +91,7 @@ SP_FinalProject/
 │       ├── knn_k5.pkl        # Trained KNN model
 │       └── knn_k5.metrics.txt # Model performance metrics
 ├── docs/
-│   ├── Project_Report.md     # Full project report
-│   ├── API_and_Docker_Guide.md
-│   └── Docker_Commands_Guide.md
+│   └── Project_Report.md     # Full project report  
 ├── preprocessing.py          # Data preprocessing functions
 ├── Scientific_Programming.ipynb        # Analysis notebook
 ├── Scientific_Programming+modelos.ipynb # Models notebook
@@ -173,5 +171,4 @@ This project was developed for educational purposes as part of the Scientific Pr
 For more detailed information, see:
 
 - [Project Report](docs/Project_Report.md)
-- [API and Docker Guide](docs/API_and_Docker_Guide.md)
-- [Docker Commands Guide](docs/Docker_Commands_Guide.md)
+
